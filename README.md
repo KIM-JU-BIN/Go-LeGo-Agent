@@ -14,7 +14,6 @@
 ## 실행
 
 ```powershell
-Copy-Item .env.example .env
 npm install
 npm start
 ```
@@ -42,28 +41,6 @@ MAPSERVICE_DB_NAME=barrier_free_db
 http://localhost:3000
 ```
 
-## DB 연결 확인
-
-```text
-http://localhost:3000/api/health
-```
-
-정상 응답:
-
-```json
-{"ok":true,"database":"barrier_free_db","connected":true}
-```
-
-## 발표 시연 순서
-
-1. 우측 상단 `DB 연결됨: barrier_free_db` 표시 확인
-2. `정보문화관 장애인 화장실 어디 있어?` 질문
-3. 로딩 단계와 `ACCESSIBLE` 시설 카드 확인
-4. 이어서 `엘리베이터도 있어?` 질문
-5. 직전 건물인 정보문화관을 기억해 검색하는지 확인
-6. 휠체어 모드 전환 후 `본관 3층 화장실 어디 있어?` 질문
-7. `UNKNOWN`을 `현장 확인 필요`로 표시하는 안전 정책 확인
-
 ## 다음 고도화 후보
 
 - 시설 사진과 실내 안내 이미지 추가
@@ -71,9 +48,3 @@ http://localhost:3000/api/health
 - 제보 버튼을 기존 `/api/accessibility-reports` API와 연결
 - `stair`를 제외하고 `ramp`, `elevator`, `path`를 우선하는 휠체어 경로 탐색
 - 문서 임베딩(RAG)으로 교내 편의시설 이용 기준과 FAQ 응답 보강
-
-## Git 커밋 메시지
-
-```text
-feat: enhance agent chat UX with loading states and accessibility result cards
-```
