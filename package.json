@@ -1,0 +1,16 @@
+{
+  "name": "golego-agent-mvp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "고르고 접근성 시설 안내 Agent MVP",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0"
+  }
+}

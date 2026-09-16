@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>고르고 접근성 안내 Agent</title>
+  <link rel="stylesheet" href="/css/agent.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">GO-LEGO ACCESSIBILITY AGENT</p>
+        <h1>고르고 접근성 안내 Agent</h1>
+        <p class="sub">등록된 시설 정보와 접근성 상태를 확인해 안내합니다.</p>
+      </div>
+      <div id="dbBadge" class="badge checking">DB 연결 확인 중</div>
+    </header>
+
+    <main class="layout">
+      <section class="chat-panel" aria-label="접근성 안내 채팅">
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <div class="quick" aria-label="빠른 질문">
+          <button data-question="정보문화관 장애인 화장실 어디 있어?">정보문화관 화장실</button>
+          <button data-question="본관 엘리베이터 알려줘">본관 엘리베이터</button>
+          <button data-question="도서관 경사로 찾아줘">도서관 경사로</button>
+          <button data-question="정보문화관 계단 어디 있어?">정보문화관 계단</button>
+        </div>
+        <form id="chatForm" class="input-form">
+          <input id="message" placeholder="예: 본관 엘리베이터 알려줘" autocomplete="off" maxlength="200" aria-label="Agent에게 질문하기">
+          <button type="submit">보내기</button>
+        </form>
+      </section>
+
+      <aside class="info-panel">
+        <section>
+          <h2>이동 모드</h2>
+          <div class="modes">
+            <button class="active" data-mode="walking">일반 이동</button>
+            <button data-mode="wheelchair">휠체어</button>
+          </div>
+        </section>
+        <section class="context-card">
+          <h2>현재 대화 기준</h2>
+          <p id="contextBuilding">선택된 건물 없음</p>
+          <small>건물명을 생략한 후속 질문에는 직전 검색 건물을 참고합니다.</small>
+        </section>
+        <section class="process-card">
+          <div class="process-title"><h2>Agent 처리 로그</h2><span id="resultCount">대기 중</span></div>
+          <ol id="processLog">
+            <li>질문 입력을 기다리고 있습니다.</li>
+          </ol>
+        </section>
+        <section class="notice">
+          위치나 접근 상태가 등록되지 않은 경우, Agent는 정보를 임의로 만들어 답변하지 않습니다.
+        </section>
+      </aside>
+    </main>
+  </div>
+  <script src="/js/agent-ui.js"></script>
+</body>
+</html>
