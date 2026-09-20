@@ -2,24 +2,12 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.api.dependencies import get_agent_service
 from app.application.agent_service import AgentService
-from app.application.intent_service import IntentService
 from app.core.config import get_settings
-from app.infrastructure.accessibility_repository import MySQLAccessibilityRepository
 from app.schemas.agent import AgentChatRequest, AgentChatResponse
-from app.tools.accessibility_tool import AccessibilitySearchTool
 
 router = APIRouter(prefix="/agent", tags=["agent"])
-
-
-_repository = MySQLAccessibilityRepository()
-_intent_service = IntentService()
-_search_tool = AccessibilitySearchTool(_repository)
-
-
-def get_agent_service() -> AgentService:
-    """HTTP 라우터가 사용할 AgentService 의존성을 생성합니다."""
-    return AgentService(search_tool=_search_tool, intent_service=_intent_service)
 
 
 @router.post("/chat", response_model=AgentChatResponse)
