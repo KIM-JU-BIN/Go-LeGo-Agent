@@ -25,7 +25,7 @@ app/
 - 신규 Python 서비스의 진입점은 `app/main.py`입니다.
 - 기존 DB 변수인 `DB_*`와 MapService 계열의 `MAPSERVICE_DB_*`를 모두 읽을 수 있도록 구성했습니다.
 
-회의 자료에서 강조된 API 입력값 검증, 외부 API 장애 대응, 제보 lifecycle, 보안/운영 분리와 충돌하지 않도록 Agent도 입력 경계를 Pydantic으로 제한하고 데이터 조회 계층을 분리했습니다. fileciteturn16file0 fileciteturn16file8
+회의 자료에서 강조된 API 입력값 검증, 외부 API 장애 대응, 제보 lifecycle, 보안/운영 분리와 충돌하지 않도록 Agent도 입력 경계를 Pydantic으로 제한하고 데이터 조회 계층을 분리했습니다.
 
 ## 3. 로컬 실행
 
@@ -77,8 +77,8 @@ GitHub Actions에서도 동일한 검증을 수행합니다.
 ## 5. 다음 통합 단계
 
 1. 현재 MySQL Repository Adapter의 실제 DB 스키마를 Go-LeGo 최신 DB와 대조합니다.
-2. 경로 탐색 Tool을 추가하고 기존 `/api/access-routes` 계약과 연결합니다. 회의 자료에 해당 API가 명시되어 있습니다. fileciteturn16file2
-3. 위험 제보 Tool을 추가하되 `PENDING → VALID/REJECTED → RESOLVED` lifecycle을 그대로 사용합니다. fileciteturn16file8
+2. 경로 탐색 Tool을 추가하고 기존 `/api/access-routes` 계약과 연결합니다. 회의 자료에 해당 API가 명시되어 있습니다.
+3. 위험 제보 Tool을 추가하되 `PENDING → VALID/REJECTED → RESOLVED` lifecycle을 그대로 사용합니다.
 4. LLM Provider는 Tool 호출 계층과 분리해 추가합니다. LLM이 시설 위치를 직접 만들어내지 못하도록 조회 결과를 근거 데이터로 제한합니다.
 5. Go-LeGo 본 Backend와 통합할 때 DB 직접 접근 대신 HTTP Adapter로 전환할 수 있도록 Port를 유지합니다.
 
