@@ -1,11 +1,10 @@
 """Agent 채팅 HTTP 엔드포인트입니다."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.application.agent_service import AgentService
 from app.application.intent_service import IntentService
 from app.core.config import get_settings
-from app.domain.ports import AccessibilityRepository
 from app.infrastructure.accessibility_repository import MySQLAccessibilityRepository
 from app.schemas.agent import AgentChatRequest, AgentChatResponse
 
@@ -26,6 +25,8 @@ async def chat(request: AgentChatRequest, service: AgentService = Depends(get_ag
     """자연어 질문을 Agent 서비스로 전달하고 구조화된 결과를 반환합니다."""
     settings = get_settings()
     if len(request.message) > settings.max_agent_message_length:
-        # Pydantic의 max_length와 설정값이 서로 다른 환경에서도 방어적으로 제한합니다.
-        raise ValueError("질문 길이가 허용 범위를 초과했습니다.")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"질문은 {settings.max_agent_message_length}자 이내여야 합니다.",
+        )
     return await service.chat(request.message, request.mobility_type)
