@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 MobilityType = Literal["walking", "wheelchair", "stroller", "senior"]
@@ -11,10 +11,14 @@ MobilityType = Literal["walking", "wheelchair", "stroller", "senior"]
 class AgentChatRequest(BaseModel):
     """사용자가 Agent에 보내는 질문을 검증합니다."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     message: str = Field(min_length=1, max_length=200, description="사용자의 자연어 질문")
-    mobility_type: MobilityType = Field(default="walking", description="이동 유형")
+    mobility_type: MobilityType = Field(
+        default="walking",
+        validation_alias=AliasChoices("mobility_type", "mobilityType"),
+        description="이동 유형",
+    )
 
 
 class FacilityItem(BaseModel):
@@ -25,7 +29,10 @@ class FacilityItem(BaseModel):
     type: str
     floor: str = ""
     description: str = ""
-    wheelchair_access_status: Literal["ACCESSIBLE", "NOT_ACCESSIBLE", "UNKNOWN"] = "UNKNOWN"
+    wheelchair_access_status: Literal["ACCESSIBLE", "NOT_ACCESSIBLE", "UNKNOWN"] = Field(
+        default="UNKNOWN",
+        serialization_alias="wheelchairAccessStatus",
+    )
     latitude: float | None = None
     longitude: float | None = None
 
