@@ -2,16 +2,16 @@
 
 from app.application.intent_service import IntentService
 from app.domain.accessibility import AccessibilityFacility
-from app.domain.ports import AccessibilityRepository
 from app.schemas.agent import AgentChatResponse, FacilityItem
+from app.tools.accessibility_tool import AccessibilitySearchTool
 
 
 class AgentService:
-    """질문 분석부터 도메인 조회와 안전한 응답 생성까지 오케스트레이션합니다."""
+    """질문 분석부터 Tool 호출과 안전한 응답 생성까지 오케스트레이션합니다."""
 
-    def __init__(self, repository: AccessibilityRepository, intent_service: IntentService) -> None:
-        """Agent가 사용할 저장소와 의도 분석 서비스를 주입받습니다."""
-        self._repository = repository
+    def __init__(self, search_tool: AccessibilitySearchTool, intent_service: IntentService) -> None:
+        """Agent가 사용할 Tool과 의도 분석 서비스를 주입받습니다."""
+        self._search_tool = search_tool
         self._intent_service = intent_service
 
     async def chat(self, message: str, mobility_type: str) -> AgentChatResponse:
@@ -28,7 +28,7 @@ class AgentService:
             )
 
         buildings = self._intent_service.extract_buildings(message)
-        facilities = await self._repository.search_facilities(intent, buildings)
+        facilities = await self._search_tool.execute(intent, buildings)
         return AgentChatResponse(
             intent=intent,
             items=[self._to_item(facility) for facility in facilities],
