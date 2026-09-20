@@ -1,3 +1,20 @@
-node_modules/
+# Environment
 .env
-npm-debug.log*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+
+# IDE
+.idea/
+.vscode/
