@@ -5,7 +5,9 @@ from functools import lru_cache
 from app.application.agent_service import AgentService
 from app.application.intent_service import IntentService
 from app.infrastructure.accessibility_repository import MySQLAccessibilityRepository
+from app.infrastructure.route_repository import GoLegoRouteRepository
 from app.tools.accessibility_tool import AccessibilitySearchTool
+from app.tools.route_tool import RouteSearchTool
 
 
 @lru_cache(maxsize=1)
@@ -27,9 +29,22 @@ def get_accessibility_search_tool() -> AccessibilitySearchTool:
 
 
 @lru_cache(maxsize=1)
+def get_route_repository() -> GoLegoRouteRepository:
+    """기존 Go-LeGo 백엔드 경로 API Adapter를 반환합니다."""
+    return GoLegoRouteRepository()
+
+
+@lru_cache(maxsize=1)
+def get_route_search_tool() -> RouteSearchTool:
+    """경로 조회 Tool과 Go-LeGo API Adapter를 조립해 반환합니다."""
+    return RouteSearchTool(get_route_repository())
+
+
+@lru_cache(maxsize=1)
 def get_agent_service() -> AgentService:
     """HTTP 계층에서 사용할 AgentService 의존성을 조립해 반환합니다."""
     return AgentService(
         search_tool=get_accessibility_search_tool(),
         intent_service=get_intent_service(),
+        route_tool=get_route_search_tool(),
     )
