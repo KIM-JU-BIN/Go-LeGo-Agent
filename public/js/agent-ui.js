@@ -374,7 +374,7 @@ function formatDuration(duration) {
 }
 
 function normalizeAnswer(value) {
-  return String(value ?? "").replace(/\\\\n/g, "\n");
+  return String(value ?? "").replace(/\\n/g, "\n");
 }
 
 function escapeHtml(value) {
