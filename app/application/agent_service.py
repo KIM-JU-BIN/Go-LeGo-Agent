@@ -189,6 +189,13 @@ class AgentService:
                 "등록된 경로를 찾지 못했습니다. 정확하지 않은 경로를 만들어 안내하지 않습니다."
             )
 
+        mobility_label = {
+            "wheelchair": "휠체어",
+            "walking": "일반",
+            "stroller": "유모차",
+            "senior": "어르신",
+        }.get(mobility_type, "일반")
+
         first = routes[0]
         danger_text = (
             f"위험 지점 {first.danger_count}곳이 감지되었습니다."
@@ -196,7 +203,7 @@ class AgentService:
             else "응답에 포함된 위험 지점은 없습니다."
         )
         return (
-            f"{destination_name}까지 {len(routes)}개의 경로를 확인했습니다. "
+            f"{destination_name}까지 {mobility_label} 이동 경로 {len(routes)}개를 확인했습니다. "
             f"첫 번째 경로는 약 {first.distance:.0f}m, "
             f"예상 {first.duration:.0f}분입니다. {danger_text}"
         )
