@@ -35,7 +35,7 @@ class AgentChatRequest(BaseModel):
 
 
 class FacilityItem(BaseModel):
-    """Agent가 조회한 접근성 시설 하나를 표현합니다."""
+    """Agent가 조회한 접근성 시설 또는 사진 POI 하나를 표현합니다."""
 
     id: str
     name: str
@@ -52,6 +52,10 @@ class FacilityItem(BaseModel):
     )
     latitude: float | None = None
     longitude: float | None = None
+    photo_url: str | None = Field(
+        default=None,
+        serialization_alias="photoUrl",
+    )
 
 
 class RoutePointItem(BaseModel):
