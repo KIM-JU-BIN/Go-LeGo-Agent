@@ -17,7 +17,7 @@ function addTextMessage(text, role = "agent") {
     <span class="avatar">${role === "agent" ? "G" : "나"}</span>
     <div class="bubble"></div>
   `;
-  row.querySelector(".bubble").textContent = text;
+  row.querySelector(".bubble").textContent = normalizeAnswer(text);
   messages.append(row);
   scrollMessages();
   return row;
@@ -35,6 +35,43 @@ function addWelcome() {
     </p>
   `;
   messages.append(welcome);
+}
+
+function addPhotoCards(items) {
+  const group = document.createElement("div");
+  group.className = "photo-list";
+
+  items.forEach((item) => {
+    if (!item.photoUrl) return;
+
+    const card = document.createElement("article");
+    card.className = "photo-card";
+    card.innerHTML = `
+      <div class="photo-frame">
+        <img src="${escapeHtml(item.photoUrl)}" alt="${escapeHtml(item.name)} 사진" loading="lazy">
+      </div>
+      <div class="photo-caption">
+        <div>
+          <span class="type-label">등록된 현장 사진</span>
+          <h3>${escapeHtml(item.name)}</h3>
+          <p>${escapeHtml(item.description || item.floor || "등록된 POI 사진")}</p>
+        </div>
+        <button type="button" class="photo-open" data-url="${escapeHtml(item.photoUrl)}">크게 보기</button>
+      </div>
+    `;
+    group.append(card);
+  });
+
+  group.addEventListener("click", (event) => {
+    const button = event.target.closest(".photo-open");
+    if (!button) return;
+    window.open(button.dataset.url, "_blank", "noopener,noreferrer");
+  });
+
+  if (group.children.length) {
+    messages.append(group);
+    scrollMessages();
+  }
 }
 
 function addFacilityCards(items) {
@@ -194,7 +231,11 @@ async function ask(rawMessage) {
     addTextMessage(data.answer);
 
     if (data.items?.length) {
-      addFacilityCards(data.items);
+      if (data.intent === "PHOTO") {
+        addPhotoCards(data.items);
+      } else {
+        addFacilityCards(data.items);
+      }
     }
 
     if (data.routes?.length) {
@@ -330,6 +371,10 @@ function formatDistance(distance) {
 
 function formatDuration(duration) {
   return `${Math.round(Number(duration) || 0)}분`;
+}
+
+function normalizeAnswer(value) {
+  return String(value ?? "").replace(/\\\\n/g, "\n");
 }
 
 function escapeHtml(value) {
