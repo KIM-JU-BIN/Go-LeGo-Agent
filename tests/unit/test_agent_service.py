@@ -12,20 +12,28 @@ from app.tools.accessibility_tool import AccessibilitySearchTool
 class FakeAccessibilityRepository(AccessibilityRepository):
     """DB 없이 Agent 응답 로직을 검증하기 위한 메모리 저장소입니다."""
 
-    async def search_facilities(self, intent: str, building_names: list[str]) -> list[AccessibilityFacility]:
+    async def search_facilities(
+        self,
+        intent: str,
+        building_names: list[str],
+    ) -> list[AccessibilityFacility]:
         """테스트용 시설 데이터를 반환합니다."""
-        return [
-            AccessibilityFacility(
-                id=1,
-                name="정보문화관 장애인 화장실",
-                type="accessible_toilet",
-                floor="1층",
-                description="동측 복도",
-                wheelchair_access_status="UNKNOWN",
-                latitude=37.0,
-                longitude=127.0,
-            )
-        ] if intent == "TOILET" else []
+        return (
+            [
+                AccessibilityFacility(
+                    id=1,
+                    name="정보문화관 장애인 화장실",
+                    type="accessible_toilet",
+                    floor="1층",
+                    description="동측 복도",
+                    wheelchair_access_status="UNKNOWN",
+                    latitude=37.0,
+                    longitude=127.0,
+                )
+            ]
+            if intent == "TOILET"
+            else []
+        )
 
 
 @pytest.mark.asyncio
@@ -43,7 +51,10 @@ async def test_agent_returns_verified_domain_items() -> None:
     """저장소의 시설 데이터가 Tool을 거쳐 API 응답으로 변환되는지 검증합니다."""
     tool = AccessibilitySearchTool(FakeAccessibilityRepository())
     service = AgentService(tool, IntentService())
-    response = await service.chat("정보문화관 장애인 화장실 어디 있어?", "wheelchair")
+    response = await service.chat(
+        "정보문화관 장애인 화장실 어디 있어?",
+        "wheelchair",
+    )
     assert response.intent == "TOILET"
     assert len(response.items) == 1
     assert response.items[0].wheelchair_access_status == "UNKNOWN"
