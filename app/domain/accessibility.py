@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from typing import Literal
 
-
 AccessibilityStatus = Literal["ACCESSIBLE", "NOT_ACCESSIBLE", "UNKNOWN"]
 
 

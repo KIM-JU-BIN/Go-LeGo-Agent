@@ -4,7 +4,6 @@ from typing import Literal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
-
 MobilityType = Literal["walking", "wheelchair", "stroller", "senior"]
 
 
