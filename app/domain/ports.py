@@ -17,6 +17,7 @@ class AccessibilityRepository(ABC):
         self,
         intent: str,
         building_names: list[str],
+        keyword: str | None = None,
     ) -> list[AccessibilityFacility]:
-        """의도와 건물 조건에 맞는 접근성 시설을 조회합니다."""
+        """의도와 건물 및 선택 키워드 조건에 맞는 시설을 조회합니다."""
         raise NotImplementedError
