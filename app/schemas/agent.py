@@ -13,7 +13,11 @@ class AgentChatRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    message: str = Field(min_length=1, max_length=200, description="사용자의 자연어 질문")
+    message: str = Field(
+        min_length=1,
+        max_length=200,
+        description="사용자의 자연어 질문",
+    )
     mobility_type: MobilityType = Field(
         default="walking",
         validation_alias=AliasChoices("mobility_type", "mobilityType"),
@@ -29,7 +33,11 @@ class FacilityItem(BaseModel):
     type: str
     floor: str = ""
     description: str = ""
-    wheelchair_access_status: Literal["ACCESSIBLE", "NOT_ACCESSIBLE", "UNKNOWN"] = Field(
+    wheelchair_access_status: Literal[
+        "ACCESSIBLE",
+        "NOT_ACCESSIBLE",
+        "UNKNOWN",
+    ] = Field(
         default="UNKNOWN",
         serialization_alias="wheelchairAccessStatus",
     )
