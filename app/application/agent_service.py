@@ -9,7 +9,11 @@ from app.tools.accessibility_tool import AccessibilitySearchTool
 class AgentService:
     """질문 분석부터 Tool 호출과 안전한 응답 생성까지 오케스트레이션합니다."""
 
-    def __init__(self, search_tool: AccessibilitySearchTool, intent_service: IntentService) -> None:
+    def __init__(
+        self,
+        search_tool: AccessibilitySearchTool,
+        intent_service: IntentService,
+    ) -> None:
         """Agent가 사용할 Tool과 의도 분석 서비스를 주입받습니다."""
         self._search_tool = search_tool
         self._intent_service = intent_service
@@ -35,7 +39,12 @@ class AgentService:
             answer=self._build_answer(intent, facilities, mobility_type),
         )
 
-    def _build_answer(self, intent: str, facilities: list[AccessibilityFacility], mobility_type: str) -> str:
+    def _build_answer(
+        self,
+        intent: str,
+        facilities: list[AccessibilityFacility],
+        mobility_type: str,
+    ) -> str:
         """조회 결과를 사용자에게 보여줄 안전한 자연어 응답으로 변환합니다."""
         labels = {
             "TOILET": "장애인 화장실",
@@ -47,7 +56,8 @@ class AgentService:
         if not facilities:
             return (
                 f"등록된 데이터에서 요청하신 {label} 정보를 찾지 못했습니다.\\n\\n"
-                "정확하지 않은 위치를 만들어 안내하지 않습니다. 현장 확인 후 접근성 제보로 등록해 주세요."
+                "정확하지 않은 위치를 만들어 안내하지 않습니다. "
+                "현장 확인 후 접근성 제보로 등록해 주세요."
             )
 
         lines = [f"등록된 {label} {len(facilities)}곳을 찾았습니다.", ""]
@@ -57,13 +67,18 @@ class AgentService:
             if facility.description:
                 location += f" / {facility.description}"
             lines.append(f"- 위치: {location}")
-            lines.append(f"- 휠체어 접근 상태: {self._accessibility_label(facility.wheelchair_access_status)}")
+            accessibility_label = self._accessibility_label(
+                facility.wheelchair_access_status
+            )
+            lines.append(f"- 휠체어 접근 상태: {accessibility_label}")
             lines.append("")
 
         if mobility_type == "wheelchair":
             lines.append("휠체어 이동 안내: UNKNOWN 상태는 현장 확인이 필요합니다.")
         else:
-            lines.append("필요하면 휠체어 모드로 전환해 접근성 상태를 함께 확인할 수 있습니다.")
+            lines.append(
+                "필요하면 휠체어 모드로 전환해 접근성 상태를 함께 확인할 수 있습니다."
+            )
         return "\\n".join(lines).strip()
 
     @staticmethod
