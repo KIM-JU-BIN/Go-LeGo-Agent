@@ -13,6 +13,10 @@ class AccessibilityRepository(ABC):
     """
 
     @abstractmethod
-    async def search_facilities(self, intent: str, building_names: list[str]) -> list[AccessibilityFacility]:
+    async def search_facilities(
+        self,
+        intent: str,
+        building_names: list[str],
+    ) -> list[AccessibilityFacility]:
         """의도와 건물 조건에 맞는 접근성 시설을 조회합니다."""
         raise NotImplementedError
