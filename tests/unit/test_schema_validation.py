@@ -12,6 +12,18 @@ def test_agent_request_accepts_camel_case_mobility_type() -> None:
     assert request.mobility_type == "wheelchair"
 
 
+def test_agent_request_accepts_current_location() -> None:
+    """현재 위치 좌표를 route 질문에 사용할 수 있는지 검증합니다."""
+    request = AgentChatRequest(
+        message="지금 여기서 정보문화관까지 가는 길",
+        mobilityType="wheelchair",
+        currentLatitude=37.123,
+        currentLongitude=127.456,
+    )
+    assert request.current_latitude == 37.123
+    assert request.current_longitude == 127.456
+
+
 def test_agent_request_rejects_empty_message() -> None:
     """빈 질문을 API 경계에서 차단하는지 검증합니다."""
     with pytest.raises(ValidationError):
