@@ -333,6 +333,7 @@ function loadingSteps(intent) {
     ELEVATOR: "엘리베이터",
     RAMP: "경사로",
     STAIR: "계단",
+    PHOTO: "현장 사진",
     ROUTE: "접근성 경로",
   }[intent] || "질문";
 
