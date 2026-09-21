@@ -19,8 +19,24 @@ class FakeAccessibilityRepository(AccessibilityRepository):
         self,
         intent: str,
         building_names: list[str],
+        keyword: str | None = None,
     ) -> list[AccessibilityFacility]:
-        """테스트용 시설 데이터를 반환합니다."""
+        """테스트용 시설과 사진 데이터를 반환합니다."""
+        if intent == "PHOTO":
+            return [
+                AccessibilityFacility(
+                    id="photo-1",
+                    name="정보문화관 정문",
+                    type="entrance",
+                    floor="1층",
+                    description="정문 외부",
+                    wheelchair_access_status="UNKNOWN",
+                    latitude=37.0,
+                    longitude=127.0,
+                    photo_url="http://127.0.0.1:3000/panoramas/front.jpg",
+                )
+            ]
+
         return (
             [
                 AccessibilityFacility(
@@ -104,6 +120,7 @@ async def test_agent_returns_verified_domain_items() -> None:
     assert len(response.items) == 1
     assert response.items[0].wheelchair_access_status == "UNKNOWN"
     assert "현장 확인" in response.answer or "확인 필요" in response.answer
+    assert "\\n" not in response.answer
 
 
 @pytest.mark.asyncio
@@ -128,3 +145,13 @@ async def test_agent_returns_verified_route() -> None:
     assert response.routes[0].distance == 420.0
     assert response.routes[0].features.ramps == 1
     assert "420m" in response.answer
+
+
+@pytest.mark.asyncio
+async def test_agent_returns_photo_result() -> None:
+    """사진 질문이 등록된 POI 사진 URL을 반환하는지 검증합니다."""
+    tool = AccessibilitySearchTool(FakeAccessibilityRepository())
+    service = AgentService(tool, IntentService())
+    response = await service.chat("정보문화관 정문 사진 보여줘", "walking")
+    assert response.intent == "PHOTO"
+    assert response.items[0].photo_url.endswith("/panoramas/front.jpg")
