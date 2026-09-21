@@ -43,6 +43,15 @@ class Settings(BaseSettings):
     db_pool_min_size: int = Field(default=1, validation_alias="DB_POOL_MIN_SIZE")
     db_pool_max_size: int = Field(default=5, validation_alias="DB_POOL_MAX_SIZE")
 
+    golego_backend_base_url: str = Field(
+        default="http://127.0.0.1:3000",
+        validation_alias="GOLEGO_BACKEND_BASE_URL",
+    )
+    route_api_timeout_seconds: float = Field(
+        default=10.0,
+        validation_alias="ROUTE_API_TIMEOUT_SECONDS",
+    )
+
     max_agent_message_length: int = Field(
         default=200,
         validation_alias="MAX_AGENT_MESSAGE_LENGTH",
