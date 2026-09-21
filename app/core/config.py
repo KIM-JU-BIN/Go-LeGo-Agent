@@ -47,6 +47,10 @@ class Settings(BaseSettings):
         default="http://127.0.0.1:3000",
         validation_alias="GOLEGO_BACKEND_BASE_URL",
     )
+    mapservice_base_url: str = Field(
+        default="http://127.0.0.1:8080",
+        validation_alias="MAPSERVICE_BASE_URL",
+    )
     route_api_timeout_seconds: float = Field(
         default=10.0,
         validation_alias="ROUTE_API_TIMEOUT_SECONDS",
