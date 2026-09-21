@@ -33,8 +33,16 @@ class IntentService:
         ]
 
     def extract_route_endpoints(self, message: str) -> tuple[str | None, str | None]:
-        """질문에서 경로 출발지와 목적지 건물명을 순서대로 추출합니다."""
-        buildings = self.extract_buildings(message)
+        """질문에서 경로 출발지와 목적지 건물명을 문장 순서대로 추출합니다."""
+        normalized = self._normalize(message)
+        matches = [
+            (normalized.find(self._normalize(building)), building)
+            for building in self.BUILDINGS
+            if self._normalize(building) in normalized
+        ]
+        matches.sort(key=lambda item: item[0])
+
+        buildings = [building for _, building in matches]
         if len(buildings) >= 2:
             return buildings[0], buildings[1]
         if len(buildings) == 1:
@@ -46,7 +54,7 @@ class IntentService:
         """경로 탐색 질문의 대표적인 표현을 판별합니다."""
         return bool(
             re.search(
-                r"경로|길찾기|가는길|가는길|어떻게가|갈수|이동|까지|에서.+까지|route",
+                r"경로|길찾기|가는길|어떻게가|갈수|이동|까지|에서.+까지|route",
                 text,
             )
         )
