@@ -27,7 +27,7 @@ class AgentChatRequest(BaseModel):
 class FacilityItem(BaseModel):
     """Agent가 조회한 접근성 시설 하나를 표현합니다."""
 
-    id: int
+    id: str
     name: str
     type: str
     floor: str = ""

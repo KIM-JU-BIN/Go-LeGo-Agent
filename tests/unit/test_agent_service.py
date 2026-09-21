@@ -21,7 +21,7 @@ class FakeAccessibilityRepository(AccessibilityRepository):
         return (
             [
                 AccessibilityFacility(
-                    id=1,
+                    id="a1000000-0000-4000-8000-000000000001",
                     name="정보문화관 장애인 화장실",
                     type="accessible_toilet",
                     floor="1층",

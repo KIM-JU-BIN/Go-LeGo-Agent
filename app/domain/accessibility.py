@@ -10,7 +10,7 @@ AccessibilityStatus = Literal["ACCESSIBLE", "NOT_ACCESSIBLE", "UNKNOWN"]
 class AccessibilityFacility:
     """DB나 외부 API에 종속되지 않은 접근성 시설 도메인 모델입니다."""
 
-    id: int
+    id: str
     name: str
     type: str
     floor: str
