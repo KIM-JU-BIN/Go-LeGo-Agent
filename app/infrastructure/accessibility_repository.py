@@ -8,7 +8,11 @@ from app.domain.ports import AccessibilityRepository
 class MySQLAccessibilityRepository(AccessibilityRepository):
     """기존 barrier_free_db 스키마를 조회하는 MySQL 어댑터입니다."""
 
-    async def search_facilities(self, intent: str, building_names: list[str]) -> list[AccessibilityFacility]:
+    async def search_facilities(
+        self,
+        intent: str,
+        building_names: list[str],
+    ) -> list[AccessibilityFacility]:
         """기존 POI/facility/place_accessibility 테이블에서 시설을 조회합니다."""
         poi_types = {
             "TOILET": ["accessible_toilet"],
