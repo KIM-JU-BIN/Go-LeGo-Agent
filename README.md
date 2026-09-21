@@ -25,7 +25,7 @@ app/
 - 신규 Python 서비스의 진입점은 `app/main.py`입니다.
 - 기존 DB 변수인 `DB_*`와 MapService 계열의 `MAPSERVICE_DB_*`를 모두 읽을 수 있도록 구성했습니다.
 
-회의 자료에서 강조된 API 입력값 검증, 외부 API 장애 대응, 제보 lifecycle, 보안/운영 분리와 충돌하지 않도록 Agent도 입력 경계를 Pydantic으로 제한하고 데이터 조회 계층을 분리했습니다.
+ API 입력값 검증, 외부 API 장애 대응, 제보 lifecycle, 보안/운영 분리와 충돌하지 않도록 Agent도 입력 경계를 Pydantic으로 제한하고 데이터 조회 계층을 분리했습니다.
 
 ## 3. 로컬 실행
 
@@ -85,9 +85,3 @@ GitHub Actions에서도 동일한 검증을 수행합니다.
 ## 6. 안전 응답 원칙
 
 DB에 존재하지 않는 시설 위치나 접근성 상태를 Agent가 임의로 생성하지 않습니다. `UNKNOWN`은 확인되지 않은 상태로 유지하며, 특히 휠체어 이동에서는 확인되지 않은 정보를 접근 가능하다고 단정하지 않습니다.
-
-## 관련 커밋 메시지
-
-```text
-refactor: build production-oriented python fastapi agent foundation
-```
