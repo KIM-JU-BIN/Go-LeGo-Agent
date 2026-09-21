@@ -51,7 +51,12 @@ class MySQLAccessibilityRepository(AccessibilityRepository):
         ranked = []
         for facility in facilities:
             haystack = self._normalize(
-                " ".join(filter(None, [facility.name, facility.description, facility.floor]))
+                " ".join(
+                    filter(
+                        None,
+                        [facility.name, facility.description, facility.floor],
+                    )
+                )
             )
             score = sum(10 for name in normalized_buildings if name in haystack)
             if score > 0:
@@ -67,7 +72,7 @@ class MySQLAccessibilityRepository(AccessibilityRepository):
         if status not in {"ACCESSIBLE", "NOT_ACCESSIBLE", "UNKNOWN"}:
             status = "UNKNOWN"
         return AccessibilityFacility(
-            id=int(row["poi_id"]),
+            id=str(row["poi_id"]),
             name=str(row.get("poi_name") or ""),
             type=str(row.get("poi_type") or ""),
             floor=str(row.get("floor_info") or ""),
