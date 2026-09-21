@@ -1,6 +1,5 @@
 """접근성 경로 도메인의 불변 모델을 정의합니다."""
 
-
 from dataclasses import dataclass
 
 
