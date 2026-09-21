@@ -24,4 +24,9 @@ async def chat(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"질문은 {settings.max_agent_message_length}자 이내여야 합니다.",
         )
-    return await service.chat(request.message, request.mobility_type)
+    return await service.chat(
+        message=request.message,
+        mobility_type=request.mobility_type,
+        current_latitude=request.current_latitude,
+        current_longitude=request.current_longitude,
+    )
