@@ -1,76 +1,151 @@
-let mobilityType = 'walking';
-let lastBuilding = '';
+let mobilityType = "wheelchair";
+let lastBuilding = "";
 
-const BUILDINGS = ['정보문화관', '본관', '도서관', '디자인관', '운동장', '교수회관'];
-const messages = document.querySelector('#messages');
-const input = document.querySelector('#message');
-const dbBadge = document.querySelector('#dbBadge');
-const contextBuilding = document.querySelector('#contextBuilding');
-const processLog = document.querySelector('#processLog');
-const resultCount = document.querySelector('#resultCount');
+const BUILDINGS = ["정보문화관", "본관", "도서관", "디자인관", "운동장", "교수회관"];
+const messages = document.querySelector("#messages");
+const input = document.querySelector("#message");
+const dbBadge = document.querySelector("#dbBadge");
+const modeButton = document.querySelector("#modeButton");
+const modeMenu = document.querySelector("#modeMenu");
+const modeLabel = document.querySelector("#modeLabel");
+const newChat = document.querySelector("#newChat");
 
-function addTextMessage(text, role = 'agent') {
-  const row = document.createElement('div');
+function addTextMessage(text, role = "agent") {
+  const row = document.createElement("div");
   row.className = `message ${role}`;
-  row.innerHTML = `<span class="avatar">${role === 'agent' ? 'AI' : 'ME'}</span><div class="bubble"></div>`;
-  row.querySelector('.bubble').textContent = text;
+  row.innerHTML = `
+    <span class="avatar">${role === "agent" ? "G" : "나"}</span>
+    <div class="bubble"></div>
+  `;
+  row.querySelector(".bubble").textContent = text;
   messages.append(row);
   scrollMessages();
   return row;
 }
 
+function addWelcome() {
+  const welcome = document.createElement("div");
+  welcome.className = "welcome";
+  welcome.innerHTML = `
+    <div class="welcome-icon">G</div>
+    <h2>어디로 가고 싶으신가요?</h2>
+    <p>
+      고르고가 등록된 접근성 시설과 경로를 확인해드릴게요.<br>
+      모르는 정보는 추측하지 않고, 확인된 데이터만 안내합니다.
+    </p>
+  `;
+  messages.append(welcome);
+}
+
 function addFacilityCards(items) {
   if (!items.length) return;
-  const group = document.createElement('div');
-  group.className = 'facility-list';
+
+  const group = document.createElement("div");
+  group.className = "facility-list";
 
   items.forEach((item) => {
-    const card = document.createElement('article');
-    card.className = 'facility-card';
+    const card = document.createElement("article");
+    card.className = "facility-card";
     const status = statusInfo(item.wheelchairAccessStatus);
     card.innerHTML = `
-      <div class="facility-card-top">
-        <span class="type-label">${typeLabel(item.type)}</span>
+      <div class="card-top">
+        <span class="type-label">${escapeHtml(typeLabel(item.type))}</span>
         <span class="status ${status.className}">${status.label}</span>
       </div>
       <h3>${escapeHtml(item.name)}</h3>
-      <p class="location"><b>위치</b> ${escapeHtml(item.floor || '층 정보 없음')}${item.description ? ` · ${escapeHtml(item.description)}` : ''}</p>
+      <p class="location"><b>위치</b> ${escapeHtml(item.floor || "층 정보 없음")}${item.description ? ` · ${escapeHtml(item.description)}` : ""}</p>
       <div class="card-actions">
-        <button type="button" class="detail-button" data-facility="${escapeHtml(item.name)}">상세 정보</button>
-        <button type="button" class="report-button" data-facility="${escapeHtml(item.name)}">정보 제보</button>
-      </div>`;
+        <button type="button" data-action="detail" data-facility="${escapeHtml(item.name)}">상세 정보</button>
+        <button type="button" data-action="report" data-facility="${escapeHtml(item.name)}">정보 제보</button>
+      </div>
+    `;
     group.append(card);
   });
 
-  group.addEventListener('click', (event) => {
-    const facility = event.target.dataset.facility;
-    if (!facility) return;
-    if (event.target.classList.contains('detail-button')) {
-      addTextMessage(`“${facility}”의 상세 정보는 현재 POI 설명과 접근성 상태를 기준으로 표시하고 있습니다. 사진, 문 폭, 비상벨 정보는 현장 조사 후 추가할 예정입니다.`);
+  group.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    const facility = button.dataset.facility;
+
+    if (button.dataset.action === "detail") {
+      addTextMessage(
+        `“${facility}”는 현재 등록된 POI 설명과 접근성 상태를 기준으로 안내하고 있습니다. 사진, 문 폭, 비상벨 등 추가 정보는 현장 조사 후 연결할 수 있습니다.`
+      );
     }
-    if (event.target.classList.contains('report-button')) {
-      addTextMessage(`“${facility}”의 위치 또는 접근성 정보 제보 화면은 다음 통합 단계에서 기존 AccessNavWeb 제보 API와 연결할 예정입니다.`);
+
+    if (button.dataset.action === "report") {
+      addTextMessage(
+        `“${facility}”의 위치나 접근성 정보 제보 기능은 기존 제보 API와 연결하는 다음 통합 단계에서 제공할 예정입니다.`
+      );
     }
   });
+
+  messages.append(group);
+  scrollMessages();
+}
+
+function addRouteCards(routes) {
+  if (!routes.length) return;
+
+  const group = document.createElement("div");
+  group.className = "route-list";
+
+  routes.forEach((route, index) => {
+    const features = route.features || {};
+    const featureItems = [
+      ["계단", features.stairs],
+      ["경사로", features.ramps],
+      ["엘리베이터", features.elevators],
+      ["횡단보도", features.crosswalks],
+    ].filter(([, count]) => Number(count) > 0);
+
+    const card = document.createElement("article");
+    card.className = "route-card";
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="type-label">${index === 0 ? "추천 경로" : `대안 경로 ${index}`}</span>
+        ${route.dangerCount ? `<span class="status unknown">위험 지점 ${route.dangerCount}곳</span>` : ""}
+      </div>
+      <h3>${escapeHtml(route.title || "접근성 경로")}</h3>
+      <div class="route-summary">
+        <span class="route-stat"><strong>${formatDistance(route.distance)}</strong>거리</span>
+        <span class="route-stat"><strong>${formatDuration(route.duration)}</strong>예상</span>
+        <span class="route-stat"><strong>${route.path?.length || 0}</strong>주요 지점</span>
+      </div>
+      <div class="route-features">
+        ${featureItems.map(([label, count]) => `<span class="route-feature">${label} ${count}</span>`).join("")}
+      </div>
+    `;
+    group.append(card);
+  });
+
   messages.append(group);
   scrollMessages();
 }
 
 function showThinking(intentHint) {
   const steps = loadingSteps(intentHint);
-  const row = document.createElement('div');
-  row.className = 'message agent thinking-row';
-  row.innerHTML = `<span class="avatar">AI</span><div class="bubble thinking"><span class="dot-loader"><i></i><i></i><i></i></span><strong></strong><small></small></div>`;
-  const title = row.querySelector('strong');
-  const detail = row.querySelector('small');
+  const row = document.createElement("div");
+  row.className = "message agent thinking";
+  row.innerHTML = `
+    <span class="avatar">G</span>
+    <div class="bubble">
+      <div class="thinking-content">
+        <span class="dot-loader"><i></i><i></i><i></i></span>
+        <span class="thinking-text"></span>
+      </div>
+    </div>
+  `;
+
+  const title = row.querySelector(".thinking-text");
   let index = 0;
-  title.textContent = steps[index].title;
-  detail.textContent = steps[index].detail;
+  title.textContent = steps[index];
+
   const timer = setInterval(() => {
     index = (index + 1) % steps.length;
-    title.textContent = steps[index].title;
-    detail.textContent = steps[index].detail;
-  }, 550);
+    title.textContent = steps[index];
+  }, 650);
+
   messages.append(row);
   scrollMessages();
   return { row, timer };
@@ -83,85 +158,230 @@ async function ask(rawMessage) {
     ? `${lastBuilding} ${rawMessage}`
     : rawMessage;
 
-  addTextMessage(rawMessage, 'user');
-  if (!suppliedBuilding && lastBuilding && isFacilityQuestion) {
-    updateProcess(['직전 대화 건물 확인 완료', `${lastBuilding} 기준으로 후속 질문 검색`, '시설 정보 조회 준비 완료']);
-  }
-
+  addTextMessage(rawMessage, "user");
   const thinking = showThinking(detectIntentHint(effectiveMessage));
   const start = Date.now();
-  updateProcess(['질문 의도 분석 중', 'MySQL POI 데이터 검색 중', '접근성 상태 결합 중']);
 
   try {
-    const response = await fetch('/api/agent/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: effectiveMessage, mobilityType }),
+    const response = await fetch("/api/agent/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        message: effectiveMessage,
+        mobilityType: mobilityType,
+      }),
     });
-    const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.detail || data.error || 'Agent 요청에 실패했습니다.');
 
-    // 실제 DB가 빠르게 응답해도 사용자가 처리 과정을 인지할 수 있도록 최소 표시 시간을 둡니다.
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.detail || data.error || "Agent 요청에 실패했습니다.");
+    }
+
     const elapsed = Date.now() - start;
-    await delay(Math.max(0, 950 - elapsed));
+    await delay(Math.max(0, 650 - elapsed));
+
     clearInterval(thinking.timer);
     thinking.row.remove();
 
-    const responseBuilding = findBuilding(effectiveMessage) || findBuilding(data.items?.[0]?.name || '');
-    if (responseBuilding) setLastBuilding(responseBuilding);
-    updateProcess([
-      `질문 의도 인식: ${intentLabel(data.intent)}`,
-      `MySQL 검색 완료: ${data.items.length}건`,
-      '접근성 상태 확인 및 안전 응답 생성 완료',
-    ]);
-    resultCount.textContent = `${data.items.length}건 조회`;
+    const responseBuilding = findBuilding(effectiveMessage)
+      || findBuilding(data.items?.[0]?.name || "");
+
+    if (responseBuilding) {
+      setLastBuilding(responseBuilding);
+    }
+
     addTextMessage(data.answer);
-    addFacilityCards(data.items);
+
+    if (data.items?.length) {
+      addFacilityCards(data.items);
+    }
+
+    if (data.routes?.length) {
+      addRouteCards(data.routes);
+    }
+
+    updateConnection(true);
   } catch (error) {
     clearInterval(thinking.timer);
     thinking.row.remove();
-    updateProcess(['요청 처리 실패', '서버 및 MySQL 연결 상태 확인 필요']);
-    resultCount.textContent = '조회 실패';
-    addTextMessage(`요청을 처리하지 못했습니다.\n${error.message}`);
+    addTextMessage(
+      `요청을 처리하지 못했습니다.\n${error.message}\n\nAPI 서버와 DB 연결 상태를 확인해 주세요.`
+    );
   }
 }
 
 async function checkDatabase() {
   try {
-    const response = await fetch('/api/health');
+    const response = await fetch("/api/health");
     const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.detail || data.error);
-    dbBadge.textContent = `DB 연결됨: ${data.database}`;
-    dbBadge.className = 'badge connected';
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.detail || data.error || "Health check failed");
+    }
+
+    updateConnection(true, data.database ? `DB ${data.database}` : "Agent 연결됨");
   } catch (error) {
-    dbBadge.textContent = 'DB 연결 실패';
-    dbBadge.className = 'badge failed';
-    addTextMessage(`MySQL 연결을 확인하지 못했습니다.\n${error.message}\n\n.env의 DB_PASSWORD와 DB_NAME을 확인해 주세요.`);
+    updateConnection(false);
+    addTextMessage(
+      `Agent 연결을 확인하지 못했습니다.\n${error.message}\n\n서버가 http://127.0.0.1:8000 에서 실행 중인지 확인해 주세요.`
+    );
   }
 }
 
-function updateProcess(lines) {
-  processLog.replaceChildren(...lines.map((line, index) => {
-    const li = document.createElement('li');
-    li.className = index === lines.length - 1 ? 'complete' : '';
-    li.textContent = line;
-    return li;
-  }));
+function updateConnection(connected, label) {
+  const dot = dbBadge.querySelector(".status-dot");
+  dbBadge.classList.toggle("connected", connected);
+  dbBadge.classList.toggle("failed", !connected);
+  dbBadge.innerHTML = `<span class="status-dot"></span>${connected ? (label || "Agent 연결됨") : "연결 실패"}`;
+  if (dot) dbBadge.prepend(dot);
 }
-function setLastBuilding(building) { lastBuilding = building; contextBuilding.textContent = `${building} 기준으로 대화 중`; }
-function findBuilding(text) { return BUILDINGS.find((building) => String(text).includes(building)) || ''; }
-function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
-function scrollMessages() { messages.scrollTop = messages.scrollHeight; }
-function detectIntentHint(text) { if (/화장실/.test(text)) return 'TOILET'; if (/엘리베이터|엘베|승강기/.test(text)) return 'ELEVATOR'; if (/경사로|램프/.test(text)) return 'RAMP'; if (/계단/.test(text)) return 'STAIR'; return 'UNKNOWN'; }
-function loadingSteps(intent) { const target = {TOILET:'화장실',ELEVATOR:'엘리베이터',RAMP:'경사로',STAIR:'계단'}[intent] || '시설'; return [{title:'질문을 분석하고 있어요.',detail:'찾으려는 시설 유형을 확인하고 있습니다.'},{title:`등록된 ${target} 정보를 검색하고 있어요.`,detail:'MySQL POI 데이터를 조회하고 있습니다.'},{title:'접근성 상태를 확인하고 있어요.',detail:'확인되지 않은 정보는 안전하다고 단정하지 않습니다.'}]; }
-function intentLabel(intent) { return {TOILET:'장애인 화장실',ELEVATOR:'엘리베이터',RAMP:'경사로',STAIR:'계단',UNKNOWN:'일반 문의'}[intent] || '일반 문의'; }
-function typeLabel(type) { return {accessible_toilet:'장애인 화장실',elevator:'엘리베이터',ramp:'경사로',stair:'계단'}[type] || '시설'; }
-function statusInfo(status) { return status === 'ACCESSIBLE' ? {label:'접근 가능 확인',className:'accessible'} : status === 'NOT_ACCESSIBLE' ? {label:'접근 어려움',className:'not-accessible'} : {label:'현장 확인 필요',className:'unknown'}; }
-function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
 
-document.querySelector('#chatForm').addEventListener('submit', (event) => { event.preventDefault(); const question = input.value.trim(); if (!question) return; input.value = ''; ask(question); });
-document.querySelectorAll('[data-question]').forEach((button) => button.addEventListener('click', () => ask(button.dataset.question)));
-document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', () => { mobilityType = button.dataset.mode; document.querySelectorAll('[data-mode]').forEach((item) => item.classList.toggle('active', item === button)); addTextMessage(mobilityType === 'wheelchair' ? '휠체어 이동 모드로 변경했습니다. 접근 상태가 확인되지 않은 시설은 현장 확인이 필요합니다.' : '일반 이동 모드로 변경했습니다.'); }));
+function updateMode(mode) {
+  mobilityType = mode;
+  const labels = {
+    wheelchair: "휠체어",
+    walking: "일반 이동",
+    stroller: "유모차",
+    senior: "어르신",
+  };
+  modeLabel.textContent = labels[mode] || "휠체어";
+  modeMenu.hidden = true;
+}
 
-addTextMessage('안녕하세요. 고르고 접근성 안내 Agent입니다.\n\n장애인 화장실, 엘리베이터, 경사로, 계단 정보를 질문해 주세요.');
+function resetChat() {
+  messages.replaceChildren();
+  lastBuilding = "";
+  addWelcome();
+  addTextMessage("안녕하세요. 저는 고르고예요.\n화장실, 엘리베이터, 경사로 또는 휠체어 경로를 물어보세요.");
+}
+
+function updateProcess() {
+  // 최신 UI에서는 별도 로그 패널 대신 대화형 상태와 카드로 처리합니다.
+}
+
+function setLastBuilding(building) {
+  lastBuilding = building;
+}
+
+function findBuilding(text) {
+  return BUILDINGS.find((building) => String(text).includes(building)) || "";
+}
+
+function scrollMessages() {
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function detectIntentHint(text) {
+  if (/화장실/.test(text)) return "TOILET";
+  if (/엘리베이터|엘베|승강기/.test(text)) return "ELEVATOR";
+  if (/경사로|램프/.test(text)) return "RAMP";
+  if (/계단/.test(text)) return "STAIR";
+  if (/경로|길찾기|가는길|어떻게가|갈수|이동|까지/.test(text)) return "ROUTE";
+  return "UNKNOWN";
+}
+
+function loadingSteps(intent) {
+  const target = {
+    TOILET: "장애인 화장실",
+    ELEVATOR: "엘리베이터",
+    RAMP: "경사로",
+    STAIR: "계단",
+    ROUTE: "접근성 경로",
+  }[intent] || "질문";
+
+  return [
+    `${target} 질문을 분석하고 있어요.`,
+    "등록된 Go-LeGo 데이터를 확인하고 있어요.",
+    "확인된 결과를 안전하게 정리하고 있어요.",
+  ];
+}
+
+function typeLabel(type) {
+  return {
+    accessible_toilet: "장애인 화장실",
+    elevator: "엘리베이터",
+    ramp: "경사로",
+    stair: "계단",
+  }[type] || "접근성 시설";
+}
+
+function statusInfo(status) {
+  if (status === "ACCESSIBLE") {
+    return {label: "접근 가능 확인", className: "accessible"};
+  }
+
+  if (status === "NOT_ACCESSIBLE") {
+    return {label: "접근 어려움", className: "not-accessible"};
+  }
+
+  return {label: "현장 확인 필요", className: "unknown"};
+}
+
+function formatDistance(distance) {
+  const value = Number(distance) || 0;
+  return value >= 1000 ? `${(value / 1000).toFixed(1)}km` : `${Math.round(value)}m`;
+}
+
+function formatDuration(duration) {
+  const value = Math.round(Number(duration) || 0);
+  return `${value}분`;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  }[char]));
+}
+
+document.querySelector("#chatForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = "";
+  ask(question);
+});
+
+document.querySelectorAll("[data-question]").forEach((button) => {
+  button.addEventListener("click", () => ask(button.dataset.question));
+});
+
+modeButton.addEventListener("click", () => {
+  const rect = modeButton.getBoundingClientRect();
+  modeMenu.hidden = !modeMenu.hidden;
+  if (!modeMenu.hidden) {
+    modeMenu.style.left = `${rect.left}px`;
+    modeMenu.style.bottom = `${window.innerHeight - rect.top + 7}px`;
+  }
+});
+
+document.querySelectorAll("[data-mode]").forEach((button) => {
+  button.addEventListener("click", () => {
+    updateMode(button.dataset.mode);
+    addTextMessage(
+      `이동 모드를 “${button.textContent.replace(/^[^가-힣A-Za-z]+/, "").trim()}”로 변경했어요.`
+    );
+  });
+});
+
+document.addEventListener("click", (event) => {
+  if (!modeMenu.hidden && !modeMenu.contains(event.target) && !modeButton.contains(event.target)) {
+    modeMenu.hidden = true;
+  }
+});
+
+newChat.addEventListener("click", resetChat);
+
+addWelcome();
+addTextMessage(
+  "안녕하세요. 저는 고르고예요.\n화장실, 엘리베이터, 경사로 또는 휠체어 경로를 물어보세요."
+);
 checkDatabase();
