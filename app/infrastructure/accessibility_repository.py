@@ -95,6 +95,10 @@ class MySQLAccessibilityRepository(AccessibilityRepository):
                 score += sum(
                     10 for name in normalized_buildings if name and name in haystack
                 )
+            if normalized_buildings and not any(
+                name and name in haystack for name in normalized_buildings
+            ):
+                continue
             if normalized_keyword and normalized_keyword in haystack:
                 score += 30
             if score:
@@ -143,7 +147,7 @@ class MySQLAccessibilityRepository(AccessibilityRepository):
         photo_url = row.get("photo_url")
         if photo_url:
             photo_url = urljoin(
-                f"{get_settings().golego_backend_base_url}/",
+                f"{get_settings().mapservice_base_url}/",
                 str(photo_url),
             )
 
