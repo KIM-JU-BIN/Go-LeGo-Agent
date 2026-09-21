@@ -148,7 +148,7 @@ function showThinking(intentHint) {
 
   messages.append(row);
   scrollMessages();
-  return { row, timer };
+  return {row, timer};
 }
 
 async function ask(rawMessage) {
@@ -230,11 +230,9 @@ async function checkDatabase() {
 }
 
 function updateConnection(connected, label) {
-  const dot = dbBadge.querySelector(".status-dot");
   dbBadge.classList.toggle("connected", connected);
   dbBadge.classList.toggle("failed", !connected);
   dbBadge.innerHTML = `<span class="status-dot"></span>${connected ? (label || "Agent 연결됨") : "연결 실패"}`;
-  if (dot) dbBadge.prepend(dot);
 }
 
 function updateMode(mode) {
@@ -245,7 +243,14 @@ function updateMode(mode) {
     stroller: "유모차",
     senior: "어르신",
   };
+  const icons = {
+    wheelchair: "♿",
+    walking: "🚶",
+    stroller: "🛒",
+    senior: "🧓",
+  };
   modeLabel.textContent = labels[mode] || "휠체어";
+  modeButton.querySelector(".mode-icon").textContent = icons[mode] || "♿";
   modeMenu.hidden = true;
 }
 
@@ -254,10 +259,6 @@ function resetChat() {
   lastBuilding = "";
   addWelcome();
   addTextMessage("안녕하세요. 저는 고르고예요.\n화장실, 엘리베이터, 경사로 또는 휠체어 경로를 물어보세요.");
-}
-
-function updateProcess() {
-  // 최신 UI에서는 별도 로그 패널 대신 대화형 상태와 카드로 처리합니다.
 }
 
 function setLastBuilding(building) {
@@ -328,8 +329,7 @@ function formatDistance(distance) {
 }
 
 function formatDuration(duration) {
-  const value = Math.round(Number(duration) || 0);
-  return `${value}분`;
+  return `${Math.round(Number(duration) || 0)}분`;
 }
 
 function escapeHtml(value) {
