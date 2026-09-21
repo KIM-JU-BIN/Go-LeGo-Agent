@@ -18,3 +18,4 @@ class AccessibilityFacility:
     wheelchair_access_status: AccessibilityStatus
     latitude: float | None
     longitude: float | None
+    photo_url: str | None = None
