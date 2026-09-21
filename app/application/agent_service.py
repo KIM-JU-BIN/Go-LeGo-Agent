@@ -43,9 +43,9 @@ class AgentService:
                 items=[],
                 routes=[],
                 answer=(
-                    "찾으려는 시설이나 경로를 조금 더 구체적으로 말씀해 주세요.\\n\\n"
+                    "찾으시는 시설이나 경로를 조금 더 구체적으로 말씀해 주세요.\n\n"
                     "예: 정보문화관 장애인 화장실, 본관 엘리베이터, "
-                    "본관에서 정보문화관까지 휠체어 경로"
+                    "본관에서 정보문화관까지 휠체어로 가는 길"
                 ),
             )
 
@@ -58,7 +58,12 @@ class AgentService:
             )
 
         buildings = self._intent_service.extract_buildings(message)
-        facilities = await self._search_tool.execute(intent, buildings)
+        keyword = (
+            self._intent_service.extract_photo_keyword(message)
+            if intent == "PHOTO"
+            else None
+        )
+        facilities = await self._search_tool.execute(intent, buildings, keyword)
         return AgentChatResponse(
             intent=intent,
             items=[self._to_item(facility) for facility in facilities],
@@ -135,18 +140,22 @@ class AgentService:
     ) -> str:
         """조회 결과를 사용자에게 보여줄 안전한 자연어 응답으로 변환합니다."""
         labels = {
+            "PHOTO": "사진",
             "TOILET": "장애인 화장실",
             "ELEVATOR": "엘리베이터",
             "RAMP": "경사로",
             "STAIR": "계단",
         }
         label = labels.get(intent, "시설")
+
         if not facilities:
             return (
-                f"등록된 데이터에서 요청하신 {label} 정보를 찾지 못했습니다.\\n\\n"
-                "정확하지 않은 위치를 만들어 안내하지 않습니다. "
-                "현장 확인 후 접근성 제보로 등록해 주세요."
+                f"등록된 데이터에서 요청하신 {label} 정보를 찾지 못했습니다.\n\n"
+                "확인되지 않은 위치나 사진을 임의로 만들어 보여드리지 않습니다."
             )
+
+        if intent == "PHOTO":
+            return f"등록된 {label} {len(facilities)}장을 찾았습니다. 아래에서 확인해 주세요."
 
         lines = [f"등록된 {label} {len(facilities)}곳을 찾았습니다.", ""]
         for index, facility in enumerate(facilities, start=1):
@@ -155,19 +164,17 @@ class AgentService:
             if facility.description:
                 location += f" / {facility.description}"
             lines.append(f"- 위치: {location}")
-            accessibility_label = self._accessibility_label(
-                facility.wheelchair_access_status
+            lines.append(
+                f"- 휠체어 접근 상태: "
+                f"{self._accessibility_label(facility.wheelchair_access_status)}"
             )
-            lines.append(f"- 휠체어 접근 상태: {accessibility_label}")
             lines.append("")
 
         if mobility_type == "wheelchair":
-            lines.append("휠체어 이동 안내: UNKNOWN 상태는 현장 확인이 필요합니다.")
+            lines.append("휠체어 이동 안내: 확인되지 않은 접근 상태는 현장 확인이 필요합니다.")
         else:
-            lines.append(
-                "필요하면 휠체어 모드로 전환해 접근성 상태를 함께 확인할 수 있습니다."
-            )
-        return "\\n".join(lines).strip()
+            lines.append("필요하면 휠체어 모드로 전환해 접근성 상태를 함께 확인할 수 있습니다.")
+        return "\n".join(lines).strip()
 
     @staticmethod
     def _build_route_answer(
@@ -198,11 +205,11 @@ class AgentService:
     def _accessibility_label(status: str) -> str:
         """접근성 상태 코드를 사용자용 문구로 변환합니다."""
         labels = {
-            "ACCESSIBLE": "확인됨 (ACCESSIBLE)",
-            "NOT_ACCESSIBLE": "접근 어려움 (NOT_ACCESSIBLE)",
-            "UNKNOWN": "확인 필요 (UNKNOWN)",
+            "ACCESSIBLE": "접근 가능 확인",
+            "NOT_ACCESSIBLE": "접근 어려움",
+            "UNKNOWN": "현장 확인 필요",
         }
-        return labels.get(status, "확인 필요 (UNKNOWN)")
+        return labels.get(status, "현장 확인 필요")
 
     @staticmethod
     def _to_item(facility: AccessibilityFacility) -> FacilityItem:
@@ -216,6 +223,7 @@ class AgentService:
             wheelchair_access_status=facility.wheelchair_access_status,
             latitude=facility.latitude,
             longitude=facility.longitude,
+            photo_url=facility.photo_url,
         )
 
     @staticmethod
