@@ -1,5 +1,7 @@
 """Agent 채팅 HTTP 엔드포인트입니다."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import get_agent_service
@@ -11,7 +13,10 @@ router = APIRouter(prefix="/agent", tags=["agent"])
 
 
 @router.post("/chat", response_model=AgentChatResponse)
-async def chat(request: AgentChatRequest, service: AgentService = Depends(get_agent_service)) -> AgentChatResponse:
+async def chat(
+    request: AgentChatRequest,
+    service: Annotated[AgentService, Depends(get_agent_service)],
+) -> AgentChatResponse:
     """자연어 질문을 Agent 서비스로 전달하고 구조화된 결과를 반환합니다."""
     settings = get_settings()
     if len(request.message) > settings.max_agent_message_length:

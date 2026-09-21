@@ -24,9 +24,16 @@ class IntentService:
     def extract_buildings(self, message: str) -> list[str]:
         """질문에 포함된 알려진 건물명을 추출합니다."""
         normalized = self._normalize(message)
-        return [building for building in self.BUILDINGS if self._normalize(building) in normalized]
+        return [
+            building
+            for building in self.BUILDINGS
+            if self._normalize(building) in normalized
+        ]
 
     @staticmethod
     def _normalize(value: str) -> str:
         """자연어 검색 비교를 위한 문자열 정규화를 수행합니다."""
-        return re.sub(r"[\\s_()\\-]", "", str(value or "").replace("한양여자대학교", "").replace("한양여대", "")).lower()
+        normalized = str(value or "")
+        normalized = normalized.replace("한양여자대학교", "")
+        normalized = normalized.replace("한양여대", "")
+        return re.sub(r"[\s_()-]", "", normalized).lower()

@@ -6,7 +6,6 @@ import aiomysql
 
 from app.core.config import get_settings
 
-
 _pool: aiomysql.Pool | None = None
 
 
@@ -40,7 +39,10 @@ async def close_database() -> None:
     _pool = None
 
 
-async def fetch_all(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
+async def fetch_all(
+    query: str,
+    params: tuple[Any, ...] = (),
+) -> list[dict[str, Any]]:
     """SQL 조회 결과를 딕셔너리 목록으로 반환합니다."""
     if _pool is None:
         await initialize_database()

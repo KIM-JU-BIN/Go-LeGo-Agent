@@ -20,15 +20,33 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
 
     database_enabled: bool = Field(default=True, validation_alias="DATABASE_ENABLED")
-    db_host: str = Field(default="127.0.0.1", validation_alias=AliasChoices("MAPSERVICE_DB_HOST", "DB_HOST"))
-    db_port: int = Field(default=3306, validation_alias=AliasChoices("MAPSERVICE_DB_PORT", "DB_PORT"))
-    db_user: str = Field(default="root", validation_alias=AliasChoices("MAPSERVICE_DB_USER", "DB_USER"))
-    db_password: str = Field(default="", validation_alias=AliasChoices("MAPSERVICE_DB_PASSWORD", "DB_PASSWORD"))
-    db_name: str = Field(default="barrier_free_db", validation_alias=AliasChoices("MAPSERVICE_DB_NAME", "DB_NAME"))
+    db_host: str = Field(
+        default="127.0.0.1",
+        validation_alias=AliasChoices("MAPSERVICE_DB_HOST", "DB_HOST"),
+    )
+    db_port: int = Field(
+        default=3306,
+        validation_alias=AliasChoices("MAPSERVICE_DB_PORT", "DB_PORT"),
+    )
+    db_user: str = Field(
+        default="root",
+        validation_alias=AliasChoices("MAPSERVICE_DB_USER", "DB_USER"),
+    )
+    db_password: str = Field(
+        default="",
+        validation_alias=AliasChoices("MAPSERVICE_DB_PASSWORD", "DB_PASSWORD"),
+    )
+    db_name: str = Field(
+        default="barrier_free_db",
+        validation_alias=AliasChoices("MAPSERVICE_DB_NAME", "DB_NAME"),
+    )
     db_pool_min_size: int = Field(default=1, validation_alias="DB_POOL_MIN_SIZE")
     db_pool_max_size: int = Field(default=5, validation_alias="DB_POOL_MAX_SIZE")
 
-    max_agent_message_length: int = Field(default=200, validation_alias="MAX_AGENT_MESSAGE_LENGTH")
+    max_agent_message_length: int = Field(
+        default=200,
+        validation_alias="MAX_AGENT_MESSAGE_LENGTH",
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
