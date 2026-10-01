@@ -4,6 +4,7 @@ from functools import lru_cache
 
 from app.application.agent_service import AgentService
 from app.application.intent_service import IntentService
+from app.application.llm_intent_service import OpenAILLMIntentService
 from app.infrastructure.accessibility_repository import MySQLAccessibilityRepository
 from app.infrastructure.route_repository import GoLegoRouteRepository
 from app.tools.accessibility_tool import AccessibilitySearchTool
@@ -14,6 +15,12 @@ from app.tools.route_tool import RouteSearchTool
 def get_intent_service() -> IntentService:
     """애플리케이션 전체에서 공유할 IntentService를 반환합니다."""
     return IntentService()
+
+
+@lru_cache(maxsize=1)
+def get_llm_intent_service() -> OpenAILLMIntentService:
+    """환경 설정을 기준으로 공유할 OpenAI Intent 분석기를 반환합니다."""
+    return OpenAILLMIntentService()
 
 
 @lru_cache(maxsize=1)
@@ -47,4 +54,5 @@ def get_agent_service() -> AgentService:
         search_tool=get_accessibility_search_tool(),
         intent_service=get_intent_service(),
         route_tool=get_route_search_tool(),
+        llm_intent_service=get_llm_intent_service(),
     )

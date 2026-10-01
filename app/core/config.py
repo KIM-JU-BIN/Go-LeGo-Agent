@@ -56,6 +56,19 @@ class Settings(BaseSettings):
         validation_alias="ROUTE_API_TIMEOUT_SECONDS",
     )
 
+    openai_api_key: str = Field(
+        default="",
+        validation_alias="OPENAI_API_KEY",
+    )
+    openai_model: str = Field(
+        default="gpt-5.6-luna",
+        validation_alias="OPENAI_MODEL",
+    )
+    openai_timeout_seconds: float = Field(
+        default=15.0,
+        validation_alias="OPENAI_TIMEOUT_SECONDS",
+    )
+
     max_agent_message_length: int = Field(
         default=200,
         validation_alias="MAX_AGENT_MESSAGE_LENGTH",

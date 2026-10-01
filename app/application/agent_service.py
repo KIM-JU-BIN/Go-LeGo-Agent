@@ -1,10 +1,12 @@
 """접근성 Agent의 핵심 유스케이스를 담당합니다."""
 
 from app.application.intent_service import IntentService
+from app.application.llm_intent_service import LLMIntentProvider
 from app.domain.accessibility import AccessibilityFacility
 from app.domain.route import RouteOption
 from app.schemas.agent import (
     AgentChatResponse,
+    AgentIntent,
     FacilityItem,
     RouteFeaturesItem,
     RouteItem,
@@ -22,11 +24,13 @@ class AgentService:
         search_tool: AccessibilitySearchTool,
         intent_service: IntentService,
         route_tool: RouteSearchTool | None = None,
+        llm_intent_service: LLMIntentProvider | None = None,
     ) -> None:
-        """Agent가 사용할 Tool과 의도 분석 서비스를 주입받습니다."""
+        """Agent가 사용할 Tool, 규칙 기반 Intent, 선택적 LLM 분석기를 주입받습니다."""
         self._search_tool = search_tool
         self._intent_service = intent_service
         self._route_tool = route_tool
+        self._llm_intent_service = llm_intent_service
 
     async def chat(
         self,
@@ -36,8 +40,14 @@ class AgentService:
         current_longitude: float | None = None,
     ) -> AgentChatResponse:
         """사용자 질문을 처리하고 검증된 시설 또는 경로 데이터만 반환합니다."""
-        intent = self._intent_service.detect_intent(message)
-        if intent is None:
+        llm_intent = await self._classify_with_llm(message, mobility_type)
+        intent = (
+            llm_intent.intent
+            if llm_intent is not None
+            else self._intent_service.detect_intent(message)
+        )
+
+        if intent is None or intent == "UNKNOWN":
             return AgentChatResponse(
                 intent="UNKNOWN",
                 items=[],
@@ -55,11 +65,12 @@ class AgentService:
                 mobility_type,
                 current_latitude,
                 current_longitude,
+                llm_intent,
             )
 
-        buildings = self._intent_service.extract_buildings(message)
+        buildings = self._resolve_buildings(message, llm_intent)
         keyword = (
-            self._intent_service.extract_photo_keyword(message)
+            self._resolve_photo_keyword(message, llm_intent)
             if intent == "PHOTO"
             else None
         )
@@ -71,17 +82,61 @@ class AgentService:
             answer=self._build_answer(intent, facilities, mobility_type),
         )
 
+    async def _classify_with_llm(
+        self,
+        message: str,
+        mobility_type: str,
+    ) -> AgentIntent | None:
+        """설정된 LLM으로 질문을 분석하고, 사용할 수 없으면 규칙 기반 분석으로 넘깁니다."""
+        if self._llm_intent_service is None:
+            return None
+        return await self._llm_intent_service.classify(message, mobility_type)
+
+    def _resolve_buildings(
+        self,
+        message: str,
+        llm_intent: AgentIntent | None,
+    ) -> list[str]:
+        """LLM이 반환한 건물명을 지원 목록과 대조한 뒤 안전한 후보만 사용합니다."""
+        if llm_intent is not None:
+            buildings = [
+                building
+                for building in llm_intent.building_names
+                if building in self._intent_service.BUILDINGS
+            ]
+            if buildings:
+                return list(dict.fromkeys(buildings))
+        return self._intent_service.extract_buildings(message)
+
+    def _resolve_photo_keyword(
+        self,
+        message: str,
+        llm_intent: AgentIntent | None,
+    ) -> str | None:
+        """LLM 사진 키워드를 허용 목록과 검증하고 실패하면 규칙 기반 추출을 사용합니다."""
+        allowed = {"정문", "후문", "입구", "출입구"}
+        if llm_intent is not None and llm_intent.photo_keyword in allowed:
+            return llm_intent.photo_keyword
+        return self._intent_service.extract_photo_keyword(message)
+
     async def _chat_route(
         self,
         message: str,
         mobility_type: str,
         current_latitude: float | None,
         current_longitude: float | None,
+        llm_intent: AgentIntent | None,
     ) -> AgentChatResponse:
         """경로 질문을 Route Tool로 전달하고 안전한 응답을 구성합니다."""
-        start_name, destination_name = self._intent_service.extract_route_endpoints(
+        fallback_start, fallback_destination = self._intent_service.extract_route_endpoints(
             message
         )
+        start_name, destination_name = self._resolve_route_endpoints(
+            llm_intent,
+            fallback_start,
+            fallback_destination,
+        )
+
         if not destination_name:
             return AgentChatResponse(
                 intent="ROUTE",
@@ -131,6 +186,28 @@ class AgentService:
                 routes,
             ),
         )
+
+    def _resolve_route_endpoints(
+        self,
+        llm_intent: AgentIntent | None,
+        fallback_start: str | None,
+        fallback_destination: str | None,
+    ) -> tuple[str | None, str | None]:
+        """LLM이 추출한 경로 장소를 지원 목록과 대조한 뒤 안전한 값만 사용합니다."""
+        allowed = set(self._intent_service.BUILDINGS) | {"현재위치"}
+        if llm_intent is not None:
+            start = (
+                llm_intent.start_name
+                if llm_intent.start_name in allowed
+                else fallback_start
+            )
+            destination = (
+                llm_intent.destination_name
+                if llm_intent.destination_name in allowed
+                else fallback_destination
+            )
+            return start, destination
+        return fallback_start, fallback_destination
 
     def _build_answer(
         self,
