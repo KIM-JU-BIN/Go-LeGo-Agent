@@ -5,6 +5,39 @@ from typing import Literal
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 MobilityType = Literal["walking", "wheelchair", "stroller", "senior"]
+AgentIntentType = Literal[
+    "TOILET",
+    "ELEVATOR",
+    "RAMP",
+    "STAIR",
+    "PHOTO",
+    "ROUTE",
+    "UNKNOWN",
+]
+
+
+class AgentIntent(BaseModel):
+    """LLM이 자연어 질문에서 추출한 Agent 실행 계획의 최소 구조입니다.
+
+    위치나 접근성 상태 자체를 생성하지 않고, 현재 Agent가 지원하는 Intent와
+    알려진 장소 후보만 구조화하는 용도로 사용합니다.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    intent: AgentIntentType = Field(description="현재 질문에서 선택할 Agent Intent")
+    building_names: list[str] = Field(
+        description="질문에 언급된 건물명 후보. 알 수 없으면 빈 배열"
+    )
+    start_name: str | None = Field(
+        description="경로 출발지. 현재 위치는 '현재위치'로 표현"
+    )
+    destination_name: str | None = Field(
+        description="경로 목적지. 알 수 없으면 null"
+    )
+    photo_keyword: str | None = Field(
+        description="사진 위치 키워드. 정문/후문/입구/출입구 또는 null"
+    )
 
 
 class AgentChatRequest(BaseModel):
