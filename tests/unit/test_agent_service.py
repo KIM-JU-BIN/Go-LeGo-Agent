@@ -8,6 +8,7 @@ from app.domain.accessibility import AccessibilityFacility
 from app.domain.ports import AccessibilityRepository
 from app.domain.route import RouteFeatures, RouteOption, RoutePoint
 from app.domain.route_ports import RouteRepository
+from app.schemas.agent import AgentIntent
 from app.tools.accessibility_tool import AccessibilitySearchTool
 from app.tools.route_tool import RouteSearchTool
 
@@ -97,6 +98,22 @@ class FakeRouteRepository(RouteRepository):
         ]
 
 
+class FakeLLMIntentProvider:
+    """실제 OpenAI API 없이 LLM 결과를 주입해 Agent 연동을 검증합니다."""
+
+    def __init__(self, result: AgentIntent) -> None:
+        """테스트에서 반환할 구조화된 Intent를 저장합니다."""
+        self._result = result
+
+    async def classify(
+        self,
+        message: str,
+        mobility_type: str,
+    ) -> AgentIntent:
+        """고정된 Intent를 반환해 LLM Tool Selection 흐름을 검증합니다."""
+        return self._result
+
+
 @pytest.mark.asyncio
 async def test_agent_does_not_fabricate_unknown_question() -> None:
     """지원하지 않는 질문에 임의의 시설을 만들어 답하지 않는지 검증합니다."""
@@ -155,3 +172,32 @@ async def test_agent_returns_photo_result() -> None:
     response = await service.chat("정보문화관 정문 사진 보여줘", "walking")
     assert response.intent == "PHOTO"
     assert response.items[0].photo_url.endswith("/panoramas/front.jpg")
+
+
+@pytest.mark.asyncio
+async def test_agent_uses_structured_llm_intent_before_rule_fallback() -> None:
+    """LLM이 구조화한 Intent와 장소를 기존 Tool 실행에 연결하는지 검증합니다."""
+    accessibility_tool = AccessibilitySearchTool(FakeAccessibilityRepository())
+    route_tool = RouteSearchTool(FakeRouteRepository())
+    llm_provider = FakeLLMIntentProvider(
+        AgentIntent(
+            intent="ROUTE",
+            building_names=["본관", "정보문화관"],
+            start_name="본관",
+            destination_name="정보문화관",
+            photo_keyword=None,
+        )
+    )
+    service = AgentService(
+        accessibility_tool,
+        IntentService(),
+        route_tool=route_tool,
+        llm_intent_service=llm_provider,
+    )
+
+    response = await service.chat("정보문화관으로 안내 부탁해", "wheelchair")
+
+    assert response.intent == "ROUTE"
+    assert len(response.routes) == 1
+    assert response.routes[0].path[0].name == "본관"
+    assert response.routes[0].path[1].name == "정보문화관"
