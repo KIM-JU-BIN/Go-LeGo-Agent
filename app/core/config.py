@@ -51,9 +51,27 @@ class Settings(BaseSettings):
         default="http://127.0.0.1:8080",
         validation_alias="MAPSERVICE_BASE_URL",
     )
+
+    kakao_rest_api_key: str = Field(
+        default="",
+        validation_alias="KAKAO_REST_API_KEY",
+    )
     route_api_timeout_seconds: float = Field(
         default=10.0,
         validation_alias="ROUTE_API_TIMEOUT_SECONDS",
+    )
+
+    openai_api_key: str = Field(
+        default="",
+        validation_alias="OPENAI_API_KEY",
+    )
+    openai_model: str = Field(
+        default="gpt-5.6-luna",
+        validation_alias="OPENAI_MODEL",
+    )
+    openai_timeout_seconds: float = Field(
+        default=15.0,
+        validation_alias="OPENAI_TIMEOUT_SECONDS",
     )
 
     max_agent_message_length: int = Field(

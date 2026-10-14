@@ -326,27 +326,35 @@ GitHub Actions에서도 동일한 정적 검사와 테스트를 수행합니다.
 - 검증된 정보 필터링
 - 경로와 위험 구간을 함께 안내
 
-### Phase 5 — LLM 기반 Tool Selection
+### Phase 5 — LLM 기반 Intent / Tool Selection
 
-현재 규칙 기반 Intent 분석을 LLM 기반으로 확장합니다.
+현재 MVP에 OpenAI Responses API 기반의 구조화된 Intent 분석을 연결했습니다.
 
 ```text
 자연어 질문
     ↓
-LLM
+OpenAI Structured Output
     ↓
-의도 + 장소 + 이동 유형 + 조건 추출
+Intent + 장소 후보 + 경로 출발/목적지 추출
     ↓
-필요한 Tool 선택
+지원 목록 검증
     ↓
-Tool 실행
+기존 Accessibility / Route Tool 실행
     ↓
-결과 종합
+실제 Backend / DB 데이터
     ↓
-자연어 응답
+Agent 응답
 ```
 
-LLM은 위치나 접근성 상태를 직접 생성하지 않고, Tool이 조회한 데이터를 근거로 답변하도록 설계합니다.
+- `AgentIntent` Pydantic 모델로 LLM 결과를 검증합니다.
+- 지원하지 않는 건물명은 Agent가 그대로 사용하지 않습니다.
+- LLM 호출이 실패하거나 API Key가 없으면 기존 규칙 기반 `IntentService`로 자동 fallback합니다.
+- LLM은 위치, 접근성 상태, 경로 거리 등의 사실을 생성하지 않고 Tool이 조회할 실행 계획만 구조화합니다.
+- `OPENAI_MODEL`로 모델을 교체할 수 있으며 기본값은 `gpt-5.6-luna`입니다.
+- ROUTE의 출발지/목적지는 등록 건물 목록 밖의 장소명도 추출하며, 외부 장소 확인은 Kakao Local API를 사용하는 `PlaceSearchTool`이 담당합니다.
+- 외부 장소 검색을 사용하려면 `.env`의 `KAKAO_REST_API_KEY`를 설정해야 합니다.
+- 현재 단계는 외부 장소 검색과 좌표 검증까지이며, 외부 보행 경로와 캠퍼스 내부 접근성 경로의 결합은 별도 후속 구현입니다.
+- API Key는 `.env`에만 저장하고 GitHub에는 커밋하지 않습니다.
 
 ### Phase 6 — 대화 Context
 

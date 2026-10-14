@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api.dependencies import get_llm_intent_service
 from app.api.routes.agent import router as agent_router
 from app.api.routes.health import router as health_router
 from app.core.config import get_settings
@@ -25,6 +26,7 @@ async def lifespan(app: FastAPI):
     yield
     if settings.database_enabled:
         await close_database()
+    await get_llm_intent_service().close()
 
 
 app = FastAPI(
