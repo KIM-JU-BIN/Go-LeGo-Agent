@@ -19,8 +19,8 @@ AgentIntentType = Literal[
 class AgentIntent(BaseModel):
     """LLM이 자연어 질문에서 추출한 Agent 실행 계획의 최소 구조입니다.
 
-    위치나 접근성 상태 자체를 생성하지 않고, 현재 Agent가 지원하는 Intent와
-    알려진 장소 후보만 구조화하는 용도로 사용합니다.
+    위치나 접근성 상태 자체를 생성하지 않고, Intent와 사용자 발화에서 추출한
+    장소 표현을 구조화합니다. 외부 장소명은 별도 장소 검색 Tool에서 검증합니다.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -30,10 +30,10 @@ class AgentIntent(BaseModel):
         description="질문에 언급된 건물명 후보. 알 수 없으면 빈 배열"
     )
     start_name: str | None = Field(
-        description="경로 출발지. 현재 위치는 '현재위치'로 표현"
+        description="경로 출발지. 사용자가 말한 외부 장소명도 허용하며 현재 위치만 '현재위치'로 표현"
     )
     destination_name: str | None = Field(
-        description="경로 목적지. 알 수 없으면 null"
+        description="경로 목적지. 외부 장소명도 허용하며 알 수 없으면 null"
     )
     photo_keyword: str | None = Field(
         description="사진 위치 키워드. 정문/후문/입구/출입구 또는 null"
