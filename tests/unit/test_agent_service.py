@@ -11,6 +11,7 @@ from app.domain.route_ports import RouteRepository
 from app.schemas.agent import AgentIntent
 from app.tools.accessibility_tool import AccessibilitySearchTool
 from app.tools.route_tool import RouteSearchTool
+from app.tools.place_search_tool import PlaceCandidate
 
 
 class FakeAccessibilityRepository(AccessibilityRepository):
@@ -114,6 +115,20 @@ class FakeLLMIntentProvider:
         return self._result
 
 
+class FakePlaceSearchTool:
+    """실제 Kakao API 없이 외부 장소 검색 흐름을 검증합니다."""
+
+    enabled = True
+
+    def __init__(self, results: dict[str, list[PlaceCandidate]]) -> None:
+        self._results = results
+        self.queries: list[str] = []
+
+    async def execute(self, query: str, size: int = 5) -> list[PlaceCandidate]:
+        self.queries.append(query)
+        return self._results.get(query, [])
+
+
 @pytest.mark.asyncio
 async def test_agent_does_not_fabricate_unknown_question() -> None:
     """지원하지 않는 질문에 임의의 시설을 만들어 답하지 않는지 검증합니다."""
@@ -201,3 +216,85 @@ async def test_agent_uses_structured_llm_intent_before_rule_fallback() -> None:
     assert len(response.routes) == 1
     assert response.routes[0].path[0].name == "본관"
     assert response.routes[0].path[1].name == "정보문화관"
+
+
+@pytest.mark.asyncio
+async def test_external_route_keeps_explicit_origin_and_resolves_place() -> None:
+    """LLM이 추출한 외부 출발지를 현재 위치로 덮어쓰지 않고 장소 검색에 전달합니다."""
+    accessibility_tool = AccessibilitySearchTool(FakeAccessibilityRepository())
+    route_tool = RouteSearchTool(FakeRouteRepository())
+    place_tool = FakePlaceSearchTool({
+        "한양대역": [
+            PlaceCandidate(
+                name="한양대역",
+                address="서울 성동구",
+                road_address="서울 성동구 왕십리로",
+                latitude=37.555,
+                longitude=127.043,
+                place_url="https://place.example",
+            )
+        ]
+    })
+    llm_provider = FakeLLMIntentProvider(
+        AgentIntent(
+            intent="ROUTE",
+            building_names=["정보문화관"],
+            start_name="한양대역",
+            destination_name="정보문화관",
+            photo_keyword=None,
+        )
+    )
+    service = AgentService(
+        accessibility_tool,
+        IntentService(),
+        route_tool=route_tool,
+        llm_intent_service=llm_provider,
+        place_search_tool=place_tool,
+    )
+
+    response = await service.chat(
+        "한양대역에서 정보문화관까지 안내해줘",
+        "wheelchair",
+        current_latitude=37.56,
+        current_longitude=127.04,
+    )
+
+    assert place_tool.queries == ["한양대역"]
+    assert response.intent == "ROUTE"
+    assert response.routes == []
+    assert "출발지: 한양대역" in response.answer
+    assert "외부 장소 확인 단계" in response.answer
+
+
+@pytest.mark.asyncio
+async def test_external_place_search_asks_when_results_are_ambiguous() -> None:
+    """검색 결과가 모호하면 임의 선택하지 않고 사용자에게 장소를 확인합니다."""
+    place_tool = FakePlaceSearchTool({
+        "한양대": [
+            PlaceCandidate("한양대학교", "서울", "", 37.55, 127.04),
+            PlaceCandidate("한양대학교 ERICA", "안산", "", 37.30, 126.83),
+        ]
+    })
+    llm_provider = FakeLLMIntentProvider(
+        AgentIntent(
+            intent="ROUTE",
+            building_names=["정보문화관"],
+            start_name="한양대",
+            destination_name="정보문화관",
+            photo_keyword=None,
+        )
+    )
+    service = AgentService(
+        AccessibilitySearchTool(FakeAccessibilityRepository()),
+        IntentService(),
+        route_tool=RouteSearchTool(FakeRouteRepository()),
+        llm_intent_service=llm_provider,
+        place_search_tool=place_tool,
+    )
+
+    response = await service.chat("한양대에서 정보문화관까지", "walking")
+
+    assert response.routes == []
+    assert "여러 개" in response.answer
+    assert "1. 한양대학교" in response.answer
+    assert "2. 한양대학교 ERICA" in response.answer
