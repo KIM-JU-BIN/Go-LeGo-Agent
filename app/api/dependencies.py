@@ -9,6 +9,7 @@ from app.infrastructure.accessibility_repository import MySQLAccessibilityReposi
 from app.infrastructure.route_repository import GoLegoRouteRepository
 from app.tools.accessibility_tool import AccessibilitySearchTool
 from app.tools.route_tool import RouteSearchTool
+from app.tools.place_search_tool import PlaceSearchTool
 
 
 @lru_cache(maxsize=1)
@@ -48,6 +49,12 @@ def get_route_search_tool() -> RouteSearchTool:
 
 
 @lru_cache(maxsize=1)
+def get_place_search_tool() -> PlaceSearchTool:
+    """외부 장소 검색에 사용할 Kakao Local Tool을 반환합니다."""
+    return PlaceSearchTool()
+
+
+@lru_cache(maxsize=1)
 def get_agent_service() -> AgentService:
     """HTTP 계층에서 사용할 AgentService 의존성을 조립해 반환합니다."""
     return AgentService(
@@ -55,4 +62,5 @@ def get_agent_service() -> AgentService:
         intent_service=get_intent_service(),
         route_tool=get_route_search_tool(),
         llm_intent_service=get_llm_intent_service(),
+        place_search_tool=get_place_search_tool(),
     )
