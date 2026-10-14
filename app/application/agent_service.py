@@ -1,5 +1,9 @@
 """접근성 Agent의 핵심 유스케이스를 담당합니다."""
 
+import re
+
+import httpx
+
 from app.application.intent_service import IntentService
 from app.application.llm_intent_service import LLMIntentProvider
 from app.domain.accessibility import AccessibilityFacility
@@ -14,6 +18,7 @@ from app.schemas.agent import (
 )
 from app.tools.accessibility_tool import AccessibilitySearchTool
 from app.tools.route_tool import RouteSearchTool
+from app.tools.place_search_tool import PlaceCandidate, PlaceSearchTool
 
 
 class AgentService:
@@ -25,12 +30,14 @@ class AgentService:
         intent_service: IntentService,
         route_tool: RouteSearchTool | None = None,
         llm_intent_service: LLMIntentProvider | None = None,
+        place_search_tool: PlaceSearchTool | None = None,
     ) -> None:
         """Agent가 사용할 Tool, 규칙 기반 Intent, 선택적 LLM 분석기를 주입받습니다."""
         self._search_tool = search_tool
         self._intent_service = intent_service
         self._route_tool = route_tool
         self._llm_intent_service = llm_intent_service
+        self._place_search_tool = place_search_tool
 
     async def chat(
         self,
@@ -161,6 +168,18 @@ class AgentService:
                 ),
             )
 
+        known_places = set(self._intent_service.BUILDINGS) | {"현재위치"}
+        external_names = list(dict.fromkeys(
+            name for name in (start_name, destination_name)
+            if name and name not in known_places
+        ))
+        if external_names:
+            return await self._resolve_external_route_places(
+                start_name=start_name or "현재위치",
+                destination_name=destination_name,
+                external_names=external_names,
+            )
+
         if self._route_tool is None:
             return AgentChatResponse(
                 intent="ROUTE",
@@ -193,21 +212,137 @@ class AgentService:
         fallback_start: str | None,
         fallback_destination: str | None,
     ) -> tuple[str | None, str | None]:
-        """LLM이 추출한 경로 장소를 지원 목록과 대조한 뒤 안전한 값만 사용합니다."""
-        allowed = set(self._intent_service.BUILDINGS) | {"현재위치"}
+        """LLM이 추출한 장소명을 보존하고 빈 값만 규칙 기반 결과로 보완합니다."""
         if llm_intent is not None:
-            start = (
-                llm_intent.start_name
-                if llm_intent.start_name in allowed
-                else fallback_start
-            )
+            start = self._clean_place_name(llm_intent.start_name) or fallback_start
             destination = (
-                llm_intent.destination_name
-                if llm_intent.destination_name in allowed
-                else fallback_destination
+                self._clean_place_name(llm_intent.destination_name)
+                or fallback_destination
             )
             return start, destination
         return fallback_start, fallback_destination
+
+    @staticmethod
+    def _clean_place_name(value: str | None) -> str | None:
+        """LLM 장소 후보를 길이와 공백 기준으로 검증합니다. 실제 존재 여부는 Place Tool이 확인합니다."""
+        if not value:
+            return None
+        cleaned = " ".join(value.strip().split())
+        if not cleaned or len(cleaned) > 100:
+            return None
+        return cleaned
+
+    async def _resolve_external_route_places(
+        self,
+        start_name: str,
+        destination_name: str,
+        external_names: list[str],
+    ) -> AgentChatResponse:
+        """외부 장소명을 실제 장소 검색 결과로 검증하되 미구현 경로 결합을 가장하지 않습니다."""
+        if self._place_search_tool is None:
+            return AgentChatResponse(
+                intent="ROUTE",
+                items=[],
+                routes=[],
+                answer="외부 장소 검색 기능이 연결되지 않았습니다.",
+            )
+        if not self._place_search_tool.enabled:
+            return AgentChatResponse(
+                intent="ROUTE",
+                items=[],
+                routes=[],
+                answer=(
+                    "외부 장소를 검색하려면 Go-LeGo-Agent의 .env에 "
+                    "KAKAO_REST_API_KEY를 설정해야 합니다."
+                ),
+            )
+
+        resolved: dict[str, PlaceCandidate] = {}
+        for name in external_names:
+            try:
+                candidates = await self._place_search_tool.execute(name)
+            except (httpx.HTTPError, RuntimeError):
+                return AgentChatResponse(
+                    intent="ROUTE",
+                    items=[],
+                    routes=[],
+                    answer=(
+                        f"'{name}' 장소 검색에 실패했습니다. "
+                        "Kakao REST API 키와 네트워크 연결을 확인해 주세요."
+                    ),
+                )
+
+            if not candidates:
+                return AgentChatResponse(
+                    intent="ROUTE",
+                    items=[],
+                    routes=[],
+                    answer=(
+                        f"'{name}'에 해당하는 장소를 찾지 못했습니다. "
+                        "역 이름이나 지역명을 포함해 더 구체적으로 입력해 주세요."
+                    ),
+                )
+
+            normalized_query = self._normalize_place_text(name)
+            exact = [
+                item for item in candidates
+                if self._normalize_place_text(item.name) == normalized_query
+            ]
+            if len(exact) == 1:
+                resolved[name] = exact[0]
+                continue
+            if len(candidates) == 1:
+                resolved[name] = candidates[0]
+                continue
+
+            options = []
+            for index, item in enumerate(candidates[:3], start=1):
+                address = item.road_address or item.address or "주소 정보 없음"
+                options.append(f"{index}. {item.name} — {address}")
+            return AgentChatResponse(
+                intent="ROUTE",
+                items=[],
+                routes=[],
+                answer=(
+                    f"'{name}'과 일치할 수 있는 장소가 여러 개 있습니다. "
+                    "아래 중 정확한 장소를 골라 다시 입력해 주세요.\n"
+                    + "\n".join(options)
+                ),
+            )
+
+        descriptions = []
+        if start_name in resolved:
+            place = resolved[start_name]
+            descriptions.append(
+                f"출발지: {place.name} ({place.road_address or place.address or '주소 정보 없음'})"
+            )
+        else:
+            descriptions.append(f"출발지: {start_name}")
+        if destination_name in resolved:
+            place = resolved[destination_name]
+            descriptions.append(
+                f"목적지: {place.name} ({place.road_address or place.address or '주소 정보 없음'})"
+            )
+        else:
+            descriptions.append(f"목적지: {destination_name}")
+
+        return AgentChatResponse(
+            intent="ROUTE",
+            items=[],
+            routes=[],
+            answer=(
+                "장소 검색으로 다음 위치를 확인했습니다.\n"
+                + "\n".join(descriptions)
+                + "\n\n현재는 외부 장소 확인 단계까지 연결되어 있습니다. "
+                "외부 보행 경로와 캠퍼스 내부 접근성 경로를 안전하게 결합하는 기능은 "
+                "아직 구현되지 않아, 검증되지 않은 경로를 임의로 안내하지 않았습니다."
+            ),
+        )
+
+    @staticmethod
+    def _normalize_place_text(value: str) -> str:
+        """장소명 비교를 위해 공백과 구분 문자를 정규화합니다."""
+        return re.sub(r"[\\s_()·-]", "", value).lower()
 
     def _build_answer(
         self,
