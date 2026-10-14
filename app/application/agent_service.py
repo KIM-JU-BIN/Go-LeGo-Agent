@@ -224,7 +224,10 @@ class AgentService:
 
     @staticmethod
     def _clean_place_name(value: str | None) -> str | None:
-        """LLM 장소 후보를 길이와 공백 기준으로 검증합니다. 실제 존재 여부는 Place Tool이 확인합니다."""
+        """LLM 장소 후보의 길이와 공백을 검증합니다.
+        
+        실제 장소의 존재 여부는 Place Tool이 확인합니다.
+        """
         if not value:
             return None
         cleaned = " ".join(value.strip().split())
