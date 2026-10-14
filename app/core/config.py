@@ -51,6 +51,11 @@ class Settings(BaseSettings):
         default="http://127.0.0.1:8080",
         validation_alias="MAPSERVICE_BASE_URL",
     )
+
+    kakao_rest_api_key: str = Field(
+        default="",
+        validation_alias="KAKAO_REST_API_KEY",
+    )
     route_api_timeout_seconds: float = Field(
         default=10.0,
         validation_alias="ROUTE_API_TIMEOUT_SECONDS",
