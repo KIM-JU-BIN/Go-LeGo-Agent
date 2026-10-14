@@ -30,7 +30,10 @@ class AgentIntent(BaseModel):
         description="질문에 언급된 건물명 후보. 알 수 없으면 빈 배열"
     )
     start_name: str | None = Field(
-        description="경로 출발지. 사용자가 말한 외부 장소명도 허용하며 현재 위치만 '현재위치'로 표현"
+        description=(
+            "경로 출발지. 외부 장소명도 허용하며 현재 위치만 "
+            "'현재위치'로 표현"
+        )
     )
     destination_name: str | None = Field(
         description="경로 목적지. 외부 장소명도 허용하며 알 수 없으면 null"
