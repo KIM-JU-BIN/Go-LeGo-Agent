@@ -351,6 +351,9 @@ Agent 응답
 - LLM 호출이 실패하거나 API Key가 없으면 기존 규칙 기반 `IntentService`로 자동 fallback합니다.
 - LLM은 위치, 접근성 상태, 경로 거리 등의 사실을 생성하지 않고 Tool이 조회할 실행 계획만 구조화합니다.
 - `OPENAI_MODEL`로 모델을 교체할 수 있으며 기본값은 `gpt-5.6-luna`입니다.
+- ROUTE의 출발지/목적지는 등록 건물 목록 밖의 장소명도 추출하며, 외부 장소 확인은 Kakao Local API를 사용하는 `PlaceSearchTool`이 담당합니다.
+- 외부 장소 검색을 사용하려면 `.env`의 `KAKAO_REST_API_KEY`를 설정해야 합니다.
+- 현재 단계는 외부 장소 검색과 좌표 검증까지이며, 외부 보행 경로와 캠퍼스 내부 접근성 경로의 결합은 별도 후속 구현입니다.
 - API Key는 `.env`에만 저장하고 GitHub에는 커밋하지 않습니다.
 
 ### Phase 6 — 대화 Context
