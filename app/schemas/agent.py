@@ -89,6 +89,14 @@ class RouteItem(BaseModel):
     path: list[RoutePointItem] = Field(default_factory=list)
 
 
+class ReportDraftItem(BaseModel):
+    """챗봇이 제보 화면에 미리 채워 줄 불편 구간 제보 초안입니다."""
+
+    place_name: str = Field(default="", serialization_alias="placeName")
+    report_type: str = Field(default="기타", serialization_alias="reportType")
+    detail: str = ""
+
+
 class AgentChatResponse(BaseModel):
     """Agent 질문 처리 결과의 외부 API 계약입니다."""
 
@@ -96,6 +104,7 @@ class AgentChatResponse(BaseModel):
     intent: str
     items: list[FacilityItem] = Field(default_factory=list)
     routes: list[RouteItem] = Field(default_factory=list)
+    report: ReportDraftItem | None = None
     answer: str
 
 
