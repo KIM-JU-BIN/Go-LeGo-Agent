@@ -1,7 +1,5 @@
 """API 입력값 검증 단위 테스트입니다."""
 
-"""Tests for Agent request schema validation."""
-
 import pytest
 from pydantic import ValidationError
 
